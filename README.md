@@ -1,4 +1,4 @@
-# Replication package
+# DA - RT Price Spread Evaluation Protocol
 
 Manuscript on directional forecasting of PJM day-ahead / real-time congestion
 spreads. Every table and headline result maps
