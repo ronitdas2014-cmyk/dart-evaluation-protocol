@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+preds/
+rq3_out/
+headline_out/
+caiso_headline_out/
+caiso_cong_out/
+caiso_reformatted/
+caiso_panel.csv
+tab_headline_*.csv
+tab_caiso.csv
+rc_spa_*.csv
+dominion_case.csv
+pjm_raw/
+caiso_data/
+.DS_Store
