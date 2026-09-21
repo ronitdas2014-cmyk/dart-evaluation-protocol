@@ -47,27 +47,27 @@ python code/baseline_forecasters.py --data-dir caiso_reformatted --panel caiso_p
 ## 3. Table -> datasets -> code -> status
 | Table | Datasets | Code (command) | Status |
 |---|---|---|---|
-| `tab:panel` | `panel_dedup_all.csv`, congestion preds | `verify_all_tables.py --data data` | reproduces exactly |
-| `tab:main` | congestion preds | `verify_all_tables.py --data data` | 9/9 exact (A, Delta, PT, Brier, payoff, n_dep) |
-| `tab:decision` | congestion preds | `verify_all_tables.py --data data` | 4/4 exact |
-| `tab:naive` | congestion preds | `verify_all_tables.py --data data` | verdicts reproduce |
-| `tab:infoset` | `pred_Sbid_9model.csv` + congestion preds | `verify_all_tables.py --data data` | matches paper (A, Delta_zc, p_Holm) |
-| `tab:headline` | `pjm_raw` + `caiso_data` -> total preds | `baseline_forecasters.py --component total`; then `headline_table.py --pred <total> --market {PJM,CAISO}` | reproduces (authoritative pipeline; always-long +2.58/+2.75 exact) |
-| `tab:caiso` | `caiso_data` -> caiso congestion preds | `caiso_reformat.py`; `baseline_forecasters.py --component congestion`; then `caiso_table.py --pred <caiso cong>` | reproduces (Persistence row exact; A_nc=0.6959) |
-| `tab:notation` | none | (definitions only) | n/a |
+| `tab:panel` | `panel_dedup_all.csv`, congestion preds | `verify_all_tables.py --data data` | 
+| `tab:main` | congestion preds | `verify_all_tables.py --data data` | 
+| `tab:decision` | congestion preds | `verify_all_tables.py --data data` | 
+| `tab:naive` | congestion preds | `verify_all_tables.py --data data` | 
+| `tab:infoset` | `pred_Sbid_9model.csv` + congestion preds | `verify_all_tables.py --data data` | 
+| `tab:headline` | `pjm_raw` + `caiso_data` -> total preds | `baseline_forecasters.py --component total`; then `headline_table.py --pred <total> --market {PJM,CAISO}` | 
+| `tab:caiso` | `caiso_data` -> caiso congestion preds | `caiso_reformat.py`; `baseline_forecasters.py --component congestion`; then `caiso_table.py --pred <caiso cong>` | 
+| `tab:notation` | none | (definitions only) |
 
 ## 4. Headline results -> code
 | Result | Code | Reproduced value |
 |---|---|---|
-| Passive-INC premium (full spread) | `headline_table.py` (passive INC row) | PJM +2.58, CAISO +2.75 |
-| Request 1: paired forecast-minus-INC increments | `request1_incremental_payoff.py --pred <total dir-format>` (or `headline_table.py` increment cols) | 0/7 beat INC both markets; all CIs span zero; gross == net |
-| Request 2: Reality Check / SPA vs INC | `reality_check_spa_inc.py --data data` | zero-benchmark RC p=0.59; INC-benchmark RC p=0.84 |
-| Request 3: Dominion running case | `dominion_case.py --data data` | share 57.9%, p_up 0.628, mu_c -5.18 [-12.3,+1.0], O*kappa 0.71 |
-| RQ1 tail index (Hill) | `rq1_tail_exponents.py --data data --raw pjm_raw` | alpha ~1.5; 25/28 congestion, 28/28 total downside |
-| Stationarity (ADF/KPSS) | `stationarity_tests_verify.py --data data --raw pjm_raw` | ADF rejects unit root; KPSS does not reject |
-| Cost erosion (virtual fee) | `cost_erosion.py --data data` | median $0.44, mean $1.64; net INC +0.94 |
-| Tuned-GBM comparator | `gbm_tuned.py` (with authors' `data.py`; shim provided) | 2026-H1 0.579/+0.006; 2025-H2 0.594/-0.026 |
-| In-text numbers (tail conc., collapse, ECE, PT, block-SE, n_eff) | `verify_intext_numbers.py --data data [--pjm_raw pjm_raw]` | all reproduce |
+| Passive-INC premium (full spread) | `headline_table.py` (passive INC row) | 
+| Request 1: paired forecast-minus-INC increments | `request1_incremental_payoff.py --pred <total dir-format>` (or `headline_table.py` increment cols) |
+| Request 2: Reality Check / SPA vs INC | `reality_check_spa_inc.py --data data` | 
+| Request 3: Dominion running case | `dominion_case.py --data data` | 
+| RQ1 tail index (Hill) | `rq1_tail_exponents.py --data data --raw pjm_raw` | 
+| Stationarity (ADF/KPSS) | `stationarity_tests_verify.py --data data --raw pjm_raw` | 
+| Cost erosion (virtual fee) | `cost_erosion.py --data data` | 
+| Tuned-GBM comparator | `gbm_tuned.py` | 
+| In-text numbers (tail conc., collapse, ECE, PT, block-SE, n_eff) | `verify_intext_numbers.py --data data [--pjm_raw pjm_raw]` |
 
 ## 5. One command
 `bash run_all.sh pjm_raw caiso_data`  runs the pipeline and all table/result scripts in order.
