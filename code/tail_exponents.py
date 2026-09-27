@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-"""Heavy-tail characterisation of the congestion spread (Hill tail index).
+"""Heavy-tail characterization of the congestion spread (Hill tail index).
 
-Purpose
     Independently recompute the upper- and lower-tail Hill index of the nodal
-    congestion spread and compare with the shipped RQ1 estimates. Confirms the
+    congestion spread and compare with the published estimates. Confirms the
     finite-variance-boundary finding (alpha ~ 1.5).
 
 Inputs
@@ -13,10 +12,10 @@ Inputs
     --data DATA_DIR/panel_dedup_all.csv (18-node evaluation panel)
 
 Outputs (stdout)
-    Per node: recomputed plain Hill alpha vs the shipped estimate and its CI.
+    Per node: recomputed plain Hill alpha vs. the published estimate and its CI.
 
 Usage
-    python3 rq1_tail_exponents.py --data ./data --raw ./pjm_raw
+    python3 tail_exponents.py --data ./data --raw ./pjm_raw
 
 Note
     The manuscript's published alpha uses a drift-corrected Hill estimator
