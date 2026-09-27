@@ -7,9 +7,9 @@
 #   predictions_gate_closure_congestion.csv   -> #1 tail conc, #5 collapse, #6 ECE,
 #                                                #7 precision, #8 PT-share, #9 block-SE, #13 n_dep
 #   (raw PJM da/rt total)                      -> #2 forward premium, full-spread cap curve
-#   RQ1 tail exponents rq1_by_node.csv;
+#   tail exponents rq1_by_node.csv;
 #   stationarity_tests.csv; White RC / Hansen SPA (stationary bootstrap); vintage_probe.csv;
-#   GMC/fee erosion or_rates_rto_2025_26.csv.
+#   GMC/fee sensitivity or_rates_rto_2025_26.csv.
 import sys, argparse, glob, numpy as np, pandas as pd
 ap=argparse.ArgumentParser(); ap.add_argument('--data',default='./data/'); ap.add_argument('--pjm_raw',default=None)
 A=ap.parse_args(); D=A.data.rstrip('/')+'/'
@@ -56,7 +56,7 @@ for m in ['persistence','logistic','markov']:
     se_i=pv.std(ddof=1)/np.sqrt(N); ne=N/(se_block(pv,5)/se_i)**2; print(f"   {m:12} n_eff(payoff)={ne:.0f}  (nominal N={N})")
 
 if A.pjm_raw:
-    print("\n#2 FORWARD PREMIUM on the FULL spread (raw PJM total LMP)")
+    print("\n#2 FORWARD PREMIUM on the FULL spread (raw PJM total |DA - RT| LMP)")
     P=A.pjm_raw.rstrip('/'); nodes=sorted(pd.read_csv(D+'panel_dedup_all.csv').pnode_id.astype(str)); r=[]
     for n in nodes:
         da=pd.concat([pd.read_csv(f) for f in glob.glob(f'{P}/da_hourly/pnode={n}/*.csv')],ignore_index=True)
