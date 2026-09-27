@@ -8,7 +8,7 @@ echo "== Requests 2 and 3 =="
 python3 code/reality_check_spa_inc.py --data data --prefix rc_spa
 python3 code/dominion_case.py --data data --out dominion_case.csv
 echo "== supplementary (need raw) =="
-python3 code/cost_erosion.py --data data
+python3 code/fee_sensitivity.py --data data
 python3 code/rq1_tail_exponents.py --data data --raw "$PJM"
 python3 code/stationarity_tests_verify.py --data data --raw "$PJM"
 echo "== full-spread pipeline + headline/caiso tables =="
