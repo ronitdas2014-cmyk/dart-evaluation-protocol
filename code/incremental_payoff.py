@@ -25,7 +25,7 @@ Inputs
         with values in {-1, +1} (+1 = INC/long, -1 = DEC/short).
 
 Outputs
-    --out-prefix PREFIX (default request1_pjm):
+    --out-prefix PREFIX (default increment_vs_inc_pjm):
         PREFIX_summary.csv  one row per method: mean diff, 95% CI, bootstrap SE,
                             one-sided p (increment > 0), Holm-adjusted p, and
                             whether the 95% CI excludes zero.
@@ -34,7 +34,7 @@ Outputs
 
 Usage
     python3 incremental_payoff.py --pred pred_total_spread.csv \
-        --out-prefix request1_pjm
+        --out-prefix increment_vs_inc_pjm
 """
 
 from __future__ import annotations
@@ -79,7 +79,7 @@ def holm(p_values: np.ndarray) -> np.ndarray:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--pred", required=True, help="full-spread predictions CSV")
-    parser.add_argument("--out-prefix", default="request1_pjm", help="output prefix")
+    parser.add_argument("--out-prefix", default="increment_vs_inc_pjm", help="output prefix")
     args = parser.parse_args()
 
     pred = pd.read_csv(args.pred, parse_dates=["dt"])
