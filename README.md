@@ -1,4 +1,4 @@
-# How to reproduce every number in the paper
+# DA - RT Price Spread Evaluation Protocol
 
 This manual gives you the steps to replicate all the 7 tables in the paper.
 
