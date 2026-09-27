@@ -5,20 +5,19 @@ Purpose
     For each forecasting method, compute the PAIRED per-period difference
         forecast payoff - passive-INC payoff
     on the full settlement spread, with a dependence-aware moving-block
-    bootstrap. Report the point estimate and 95% CI, a one-sided test of a
+    bootstrap. This reports the point estimate and 95% CI, a one-sided test of a
     positive increment with Holm control across the family, and save the raw
     bootstrap draws.
 
 Definitions
     Passive INC = always-long: submit an increment offer every hour (direction
-    +1), which settles the full DA-RT spread. Payoffs are GROSS and winsorised
-    at the 99th percentile of |spread| (the paper's headline convention; the
-    fee sensitivity is handled separately in the cost section). The paired
-    difference for method k in hour t is
+    +1), which settles the full DA-RT spread. Payoffs are gross and winsorized
+    at the 99th percentile of |spread| (the fee sensitivity is handled separately 
+    in the cost section). The paired difference for method k in hour t is
         Delta_{k,t} = (d_{k,t} - 1) * winsor(spread_t),
     which equals the method payoff minus the passive-INC payoff on the same
     observation; it also equals the "Delta vs always-long" column of the
-    headline table, so the two must agree when computed from the same predictions.
+    Table 2, so the two must agree when computed from the same predictions.
 
 Inputs
     --pred PRED.csv  full-spread predictions with columns:
@@ -34,7 +33,7 @@ Outputs
                             column per method (raw output, not just the summary).
 
 Usage
-    python3 request1_incremental_payoff.py --pred pred_total_spread.csv \
+    python3 incremental_payoff.py --pred pred_total_spread.csv \
         --out-prefix request1_pjm
 """
 
@@ -66,7 +65,7 @@ def block_resamples(day_id: np.ndarray) -> list[np.ndarray]:
 
 
 def holm(p_values: np.ndarray) -> np.ndarray:
-    """Holm (1979) step-down familywise-adjusted p-values."""
+    """Holm step-down familywise-adjusted p-values."""
     order = np.argsort(p_values)
     k = p_values.size
     adjusted = np.empty(k)
