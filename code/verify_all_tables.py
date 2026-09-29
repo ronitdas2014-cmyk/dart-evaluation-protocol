@@ -8,18 +8,18 @@
 #
 # DATASETS EACH TABLE INGESTS
 # ---------------------------------------------------------------------------
-#   tab:panel     DATA_DIR/panel_dedup_all.csv
-#                 DATA_DIR/predictions_gate_closure_congestion.csv   (DART-share col)
-#   tab:main      DATA_DIR/predictions_gate_closure_congestion.csv
-#   tab:decision  DATA_DIR/predictions_gate_closure_congestion.csv
-#   tab:naive     DATA_DIR/predictions_gate_closure_congestion.csv
-#   tab:infoset   DATA_DIR/pred_Sbid_9model.csv
-#                 DATA_DIR/predictions_gate_closure_congestion.csv   (realized dart/y/zone)
-#   tab:headline  PJM_DIR/da_hourly/pnode=*/*.csv , PJM_DIR/rt_hourly/pnode=*/*.csv   (total_lmp_da/rt)
-#                 CAISO_DIR/dam/*.csv , CAISO_DIR/rtpd/*.csv                           (total)
-#                 DATA_DIR/panel_dedup_all.csv                                         (18-node set)
-#   tab:caiso     CAISO_DIR/dam/*.csv , CAISO_DIR/rtpd/*.csv                           (congestion)
-#                 DATA_DIR/caiso_node_characterization.csv                             (both-legs pick)
+#   tab:panel     data/panel_dedup_all.csv
+#                 data/predictions_gate_closure_congestion.csv   (DART-share col)
+#   tab:main      data/predictions_gate_closure_congestion.csv
+#   tab:decision  data/predictions_gate_closure_congestion.csv
+#   tab:naive     data/predictions_gate_closure_congestion.csv
+#   tab:infoset   data/pred_Sbid_9model.csv
+#                 data/predictions_gate_closure_congestion.csv   (realized dart/y/zone)
+#   tab:headline  data/da_hourly/pnode=*/*.csv , pjm_raw/rt_hourly/pnode=*/*.csv   (total_lmp_da/rt)
+#                 data/dam/*.csv , caiso_data/rtpd/*.csv                           (total)
+#                 data/panel_dedup_all.csv                                         (18-node set)
+#   tab:caiso     data/dam/*.csv , caiso_data/rtpd/*.csv                           (congestion)
+#                 data/caiso_node_characterization.csv                             (both-legs pick)
 #
 # STATUS (see printed PASS/DIFF and notes):
 #   tab:panel/main/decision/naive/infoset  -> reproduce exactly.
