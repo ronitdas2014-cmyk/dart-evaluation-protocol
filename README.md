@@ -140,13 +140,14 @@ Expected time needed to complete the tests: the two `baseline_forecasters.py` ru
 | Stationarity (ADF/KPSS) | `stationarity_tests_verify.py --data data --raw pjm_raw` | Yes (PJM raw) |
 | In-text: tail concentration, pooled→zone collapse, ECE, PT, block-SE, n_eff | `verify_intext_numbers.py --data data [--pjm_raw pjm_raw]` | Partly |
 
-## 8. What "Reproducibility" stands for in this case?
-- **Deterministic columns reproduce exactly**: accuracy, PT, Brier, payoff points,
+## 8. What does "Reproducibility" stand for in this case?
+  **Deterministic columns reproduce exactly**: accuracy, PT, Brier, payoff points,
   panel composition, verdicts, and the always-long premium (+$2.58 PJM, +$2.75 CAISO).
 - **Gradient-boosted rows** (Histogram-based Gradient Boosted Classifier, and the signed-spread regressor) can differ by
   ~$0.2/MWh across scikit-learn versions; the **conclusion is invariant** (no
   forecaster beats passive INC; every paired CI spans zero). Fix scikit-learn to the
-  version in `requirements.txt` for digit-level precision.
+  version in `requirements.txt` for digit-level precision. 
+  Note: n_dep in Table 3 is a bootstrap effective-sample estimate and reproduces to within ~3% (e.g. Persistence ≈8,500–8,650, Markov ≈842–852); every other value in all tables reproduces exactly.
 
 ## 9. Troubleshooting
 - `ModuleNotFoundError: baseline_forecasters` → you didn't set `PYTHONPATH=code`
