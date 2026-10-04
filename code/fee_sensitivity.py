@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 """Net-of-value calculation of the always-long premium (PJM virtual fee).
 
-Purpose
+Goal:
     Replicate and validate the claim that the PJM virtual-transaction fee is
     heavy-tailed (median ~$0.44/MWh, mean ~$1.63/MWh over the evaluation
     window) and that it erodes the full-spread always-long premium.
 
-Inputs
+Inputs:
     --data DATA_DIR/or_rates_rto_2025_26.csv
         PJM daily operating-reserve and virtual-fee rates; the column
         `virtual_fee_da_plus_rto_dev_$per_MWh` is the round-trip virtual fee.
 
-Outputs (stdout)
+Outputs:
     Fee distribution over the January-June 2026 out-of-sample window and the
     always-long premium net of the mean fee.
 
@@ -42,7 +42,7 @@ def load_fee(data_dir: str) -> pd.Series:
 
 
 def report(fee: pd.Series) -> None:
-    """Print the fee distribution and the net-of-fee always-long premium."""
+    """Output the fee distribution and the net-of-fee always-long premium."""
     print("PJM virtual fee, January-June 2026 out-of-sample window")
     print(f"    n days       : {fee.size}")
     print(f"    median       : ${fee.median():.2f}/MWh   (manuscript $0.44)")
