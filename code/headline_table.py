@@ -34,6 +34,13 @@ import pandas as pd
 from sklearn.ensemble import GradientBoostingRegressor
 
 SEED, N_BOOT, BLOCK_DAYS, WINSOR_Q = 20260725, 2000, 5, 0.99
+
+
+# Table 2 holds SEVEN forecasters: these six probability classifiers (bid the sign of
+# P(spread>0)) PLUS one signed-spread GradientBoostingRegressor added below in this source file. The
+# regressor is the economically aligned model of Prop. 3 -- it estimates the sign of
+# the conditional MEAN spread (the payoff-optimal direction), which a probability
+# classifier cannot target. 
 CLASSIFIERS = ["persistence", "climatology", "logistic", "gbm", "rf", "mlp"]
 
 
