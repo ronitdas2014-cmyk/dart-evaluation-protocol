@@ -3,8 +3,6 @@ Tuned HistGBM Model
 
 Hyperparameters chosen by EXPANDING-WINDOW TimeSeriesSplit CV on the TRAINING
 data only; the OOS window is never utilized during selection.
-    2026-H1 (train -> 2025-12-31): OOS acc 0.579, excess over A_0^z +0.006 (p=0.25)
-    2025-H2 (train -> 2025-06-30): OOS acc 0.594, excess -0.026
 
 """
 
