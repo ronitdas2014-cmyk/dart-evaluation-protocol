@@ -1,25 +1,25 @@
 #!/usr/bin/env python3
 """Stationarity of the congestion spread (ADF and KPSS tests).
 
-Purpose
+Goal:
     Independently recompute the Augmented Dickey-Fuller and KPSS statistics on
     the full-sample hourly congestion spread and compare with the shipped
     stationarity table. Confirms the series is stationary (ADF rejects a unit
     root; KPSS does not reject stationarity).
 
-Inputs
+Inputs:
     --raw RAW_DIR/da_hourly/pnode=<id>/*.csv , RAW_DIR/rt_hourly/pnode=<id>/*.csv
         Raw PJM hourly LMP with `congestion_price_da` / `congestion_price_rt`.
     --data DATA_DIR/stationarity_tests.csv (shipped statistics for comparison)
     --data DATA_DIR/panel_dedup_all.csv    (18-node evaluation panel)
 
-Outputs (stdout)
-    Per node: recomputed ADF / KPSS statistics vs the shipped values.
+Outputs:
+    Per node: recomputed ADF / KPSS statistics vs. the output values.
 
-Usage
+Usage:
     python3 stationarity_tests.py --data ./data --raw ./pjm_raw
 
-Dependencies
+Dependencies:
     statsmodels (see requirements.txt).
 """
 
@@ -34,7 +34,7 @@ import numpy as np
 import pandas as pd
 from statsmodels.tsa.stattools import adfuller, kpss
 
-warnings.filterwarnings("ignore")  # KPSS p-value clipping is expected here.
+warnings.filterwarnings("ignore")  # KPSS p-value clipping expected.
 
 ADF_CRIT_5 = -2.86  # 5% critical value for the ADF test (constant, no trend).
 KPSS_CRIT_5 = 0.46  # 5% critical value for the KPSS test (level stationarity).
