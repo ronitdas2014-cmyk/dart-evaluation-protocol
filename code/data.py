@@ -1,10 +1,10 @@
 """
-
-
+Goal:
 This file builds the panel built through the validated forecasting paradigm
 (baseline_forecasters.py), the temporal split, and the
 shared prediction schema every model writes.
 """
+
 from __future__ import annotations
 
 import os
@@ -12,7 +12,7 @@ import sys
 
 import pandas as pd
 
-# --- paths: package-relative defaults; override via environment variables ------
+
 _CODE = os.path.dirname(os.path.abspath(__file__))   
 _ROOT = os.path.dirname(_CODE)                        
 HARNESS_DIR = os.environ.get("PAPERA_HARNESS", _CODE)
