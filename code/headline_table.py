@@ -1,22 +1,22 @@
 #!/usr/bin/env python3
-"""Build Table ----- (economic value on the full spread, both markets).
+"""Build Table ----- (economic value on the full spread, for both PJM and CAISO markets).
 
-Purpose
+Goal:
     From the full-spread predictions produced by baseline_forecasters.py
     (--component total), compute the passive-INC (always-long) premium and each
     forecaster's directional accuracy, gross winsorised value, and paired
     forecast-minus-INC increment, with five-day block-bootstrap 95% intervals.
     The signed-spread model is refit here (a GB regressor on the pipeline's own
-    features), as the pipeline does not emit it.
+    features).
 
-Inputs
+Inputs:
     --pred PRED.csv        full-spread predictions (dart, p_<model>, features,
                            datetime_beginning_utc, pnode_id, zone), i.e. the
                            output of  baseline_forecasters.py --component total.
     --data_dir, --panel, --train_end : to rebuild the panel for the signed-spread
                            refit via baseline_forecasters.build_panel.
 
-Outputs
+Outputs:
     --out CSV : one row per (method): market, hit, value [CI], increment [CI].
 
 Usage
