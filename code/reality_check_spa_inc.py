@@ -1,27 +1,27 @@
 #!/usr/bin/env python3
 """Reality Check / SPA against passive INC (and zero), saving raw output.
 
-Purpose
+Goal:
     Test, robustly to data snooping, whether any of the nine directional
     forecasters has superior economic value relative to a benchmark. Two
     benchmarks are run so the versions can be compared:
-        zero : the strategy's own payoff (existing paper version; RC p=0.59)
-        inc  : passive INC, i.e. always-long (Jian's requested version)
+        zero : the strategy's own payoff
+        inc  : passive INC, i.e. always-long 
     All payoffs are on the congestion spread, winsorised at the 99th percentile
-    of |spread|. The passive-INC benchmark makes this a congestion notional; the
+    of |DA - RT|. The passive-INC benchmark makes this a congestion notional; the
     full-spread version requires the persisted full-spread predictions.
 
-Inputs
+Inputs:
     --data DATA_DIR/predictions_gate_closure_congestion.csv
         Out-of-sample node-hours: `p_<model>`, `dart`, `datetime_beginning_utc`.
 
-Outputs
+Outputs:
     stdout summary, plus for each benchmark:
         <prefix>_<benchmark>_summary.csv  -- per-forecaster mean excess and p-values
         <prefix>_<benchmark>_draws.csv    -- the B bootstrap draws of the RC and SPA
                                              statistics (raw output for comparison)
 
-Usage
+Usage:
     python3 reality_check_spa_inc.py --data ./data --prefix rc_spa
 """
 
