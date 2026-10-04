@@ -3,27 +3,25 @@
 # baseline_forecasters.py -- baselines for DIRECTIONAL nodal DART
 # prediction, built to a strict gate-closure information set.
 #
-# WHAT IS BEING PREDICTED
+# OUTPUT:
 #   sign(DART(n,h)) for every hour h of operating day D, decided at day-ahead
-#   GATE CLOSURE on D-1. Positive DART means day-ahead priced above realised
+#   GATE CLOSURE on D-1. Positive DART means the day-ahead price is above the realized
 #   real-time (the INC-profitable direction).
 #
-# THE INFORMATION SET IS THE MAIN  POINT
-#   At gate closure on D-1 a participant knows:
-#     * DART fully realised only through D-2. Real-time for D-1 is still being
-#       realised and real-time for D does not exist, so the most recent COMPLETE
-#       DART is two days old. This publication lag is a hard constraint and it
-#       binds regardless of whether prices are ever revised -- which the vintage
-#       probe established they are not (version_nbr == 1 everywhere).
+# THE INFORMATION SET DESCRIPTION:
+#   At gate closure on D-1 a market participant has the following information:
+#     * DART is fully realized only through D-2. Real-time for D-1 still gets
+#       realized, and real-time for D does not exist, so the most recent COMPLETE
+#       DART is two days old. This problem of publication lag is a hard constraint and it
+#       binds regardless of whether prices are ever revised.
 #     * calendar variables for D (hour, weekday, month).
 #   A participant does NOT know: day-ahead prices for D (they clear after bids
 #   are submitted), or any real-time outcome on D-1 or D.
 #
 #   Every feature here is built with a MINIMUM LAG of `min_lag_days` (default 2)
-#   and the module ships a deliberate VIOLATION mode so the inflation from
-#   ignoring the lag can be measured rather than asserted (RQ2, reframed).
+#  
 #
-# MODELS (five classes, deliberately UNTUNED)
+# MODELS (five classes, deliberately UNTUNED):
 #   persistence   sign of the same node-hour's most recent complete DART
 #   climatology   historical sign frequency for (node, hour-of-day, month)
 #   logistic      L2 logistic regression on the lagged feature set
@@ -31,8 +29,8 @@
 #   mlp           small multilayer perceptron on the same features
 #
 #   They are NOT tuned. Heavy tuning would create the multiple-comparison
-#   problem we aim to avoid, and the scientific question is whether model
-#   CLASS differences survive dependence-aware inference -- not which model wins the prediction competition.
+#   problem, and the main question then becomes whether model
+#   CLASS differences survive dependence-aware inference -- not which model wins the prediction accuracy.
 #
 # Usage:
 #   python baseline_forecasters.py --validate
@@ -97,7 +95,7 @@ def make_features(d, min_lag_days=2, violate_lag=False):
 
     violate_lag=True deliberately uses a 1-DAY lag, i.e. information that is NOT
     available at gate closure. It exists ONLY to measure how much apparent skill
-    inflates when the lag is ignored -- never for a reported forecast."""
+    inflates when the lag is ignored -- NOT for forecasting."""
     d = d.sort_values(KEY).reset_index(drop=True).copy()
     t = pd.DatetimeIndex(d[KEY])
     d["hour"] = t.hour
@@ -128,8 +126,8 @@ def make_features(d, min_lag_days=2, violate_lag=False):
 
 
 def _fourier_exog(times, k=FOURIER_K):
-    """Deterministic hour-of-day harmonics plus a weekend flag. These are KNOWN
-    for the target day at gate closure, so they are legitimate exogenous inputs
+    """Deterministic hour-of-day features plus a weekend flag. These are KNOWN
+    for the target day at gate closure --- Exogenous inputs
     for a forecast and can be supplied over the forecast horizon."""
     t = pd.DatetimeIndex(times)
     cols = []
@@ -144,10 +142,9 @@ def _origin_index(dates, target_day, min_lag_days):
     """Index of the LAST observation a participant could have used when
     forecasting `target_day`.
 
-    At gate closure on D-1 the freshest COMPLETE day is D-min_lag_days, so the
-    origin is the final observation on or before that day. Returned as a position
-    so the forecast horizon can be derived from actual data positions rather than
-    by assuming 24 rows per day (which DST breaks)."""
+    At gate closure on D-1, the latest COMPLETE day is D-min_lag_days, so the
+    origin is the final observation on or before that day."""
+  
     cutoff = pd.Timestamp(target_day) - pd.Timedelta(days=int(min_lag_days))
     ok = np.flatnonzero(dates <= cutoff)
     return int(ok[-1]) if ok.size else -1
@@ -160,9 +157,9 @@ def _norm_cdf(z):
 
 def markov_params(res):
     """Regime means, sigmas and the transition matrix from a fitted
-    MarkovRegression, looked up BY NAME.
+    Markov Regression model.
 
-    res.params is an ndarray when the model is fitted on an array (no pandas
+    res.params ---- is an ndarray when the model is fitted on an array (no pandas
     index), so positional slicing would silently pick the transition
     probabilities instead of the regime means. Observed layout:
       ['p[0->0]', 'p[1->0]', 'const[0]', 'const[1]', 'sigma2[0]', 'sigma2[1]']
@@ -271,9 +268,9 @@ def _fit_ts_once(name, y_train, exog_train, seed=0):
 def _rolling_ts_predict(name, node_df, n_train, min_lag_days=2, seed=0):
     """P(DART > 0) for every TEST row of one node, rolling the forecast origin.
 
-    For each test day D the origin is the last observation on or before
-    D - min_lag_days, so the forecast never uses information a participant could
-    not have had at gate closure. The horizon is derived from actual data
+    For each test day D, the origin is the last observation on or before
+    D - min_lag_days, so the forecast never uses information a participant 
+    CANNOT POSSESS at gate closure. The horizon is derived from actual data
     POSITIONS, not by assuming 24 rows per day, so DST days are handled."""
     
     d = node_df.sort_values(KEY).reset_index(drop=True)
@@ -336,7 +333,8 @@ def _rolling_ts_predict(name, node_df, n_train, min_lag_days=2, seed=0):
 
 
 def _fit_predict(name, tr, te, features=FEATURES, seed=0):
-    """Return predicted P(DART > 0) on the test rows. Models are UNTUNED."""
+    """Return predicted P(DART > 0) on the test rows. Models' hyperparameters are NOT TUNED."""
+  
     if name == "persistence":
         # sign of the most recent COMPLETE observation at that node-hour
         return (te["lag_a"] > 0).astype(float).to_numpy()
@@ -443,8 +441,7 @@ def run_models(panel, train_end, models=MODELS, features=FEATURES, seed=0,
 
 # ------------------------------------------------------------------ metrics ---------------------------------------------------
 def skill_metrics(te, model, thresh=0.5):
-    """Directional and economic-magnitude metrics. No transaction costs and no
-    settlement assumptions -- gross value only."""
+    """Directional and economic-magnitude metrics.Gross value only."""
     p = te[f"p_{model}"].to_numpy(float)
     y = te["y"].to_numpy(int)
     dart = te["dart"].to_numpy(float)
@@ -729,8 +726,9 @@ def _validate():
         np.all(np.isfinite(pk)) and np.all((pk >= 0) & (pk <= 1)),
         f"(min {pk.min():.3f}, max {pk.max():.3f})")
     yte = (fa["dart"].to_numpy()[n_tr:] > 0).astype(int)
-    # ORACLE: the sign of the value at each forecast origin -- the best any
-    # linear model can do here, and the right yardstick for these checks.
+  
+    # ORACLE: the sign of the value at each forecast origin
+  
     dts_fa = pd.DatetimeIndex(fa["date"])
     oracle = np.empty(len(fa) - n_tr)
     for j, ix in enumerate(range(n_tr, len(fa))):
@@ -743,9 +741,9 @@ def _validate():
         abs(hit_o - theo) < 0.10, f"(oracle {hit_o:.3f} vs theory {theo:.3f})")
 
     hit_k = float(((pk > 0.5).astype(int) == yte).mean())
-    chk("Kalman beats a coin flip on a persistent AR(1)", hit_k > 0.60,
+    chk("self-test: Kalman recovers sign on a synthetic AR(1) when signal exists (hit > 0.60; synthetic data)", hit_k > 0.60,
         f"(hit rate {hit_k:.3f}; oracle {hit_o:.3f})")
-    chk("Kalman is within reach of the oracle", hit_k > hit_o - 0.15,
+    chk("Kalman is very close to the oracle", hit_k > hit_o - 0.15,
         f"({hit_k:.3f} vs {hit_o:.3f})")
 
     ps = _rolling_ts_predict("sarima", fa, n_tr, 2)
@@ -753,9 +751,9 @@ def _validate():
         np.all(np.isfinite(ps)) and np.all((ps >= 0) & (ps <= 1)),
         f"(min {ps.min():.3f}, max {ps.max():.3f})")
     hit_s = float(((ps > 0.5).astype(int) == yte).mean())
-    chk("SARIMA beats a coin flip on the AR(1)", hit_s > 0.60,
+    chk("self-test: SARIMA recovers sign on a synthetic AR(1) when signal exists (hit > 0.60; synthetic data)", hit_k > 0.60,
         f"(hit rate {hit_s:.3f}; oracle {hit_o:.3f})")
-    chk("SARIMA is within reach of the oracle", hit_s > hit_o - 0.15,
+    chk("SARIMA is very close to the oracle", hit_s > hit_o - 0.15,
         f"({hit_s:.3f} vs {hit_o:.3f})")
 
     pm_ = _rolling_ts_predict("markov", fa, n_tr, 2)
@@ -763,13 +761,13 @@ def _validate():
         np.all(np.isfinite(pm_)) and np.all((pm_ >= 0) & (pm_ <= 1)),
         f"(min {pm_.min():.3f}, max {pm_.max():.3f})")
 
-    # --- NO LOOKAHEAD: corrupting the target day must NOT change its forecast
+    # --- NO LOOKAHEAD: corrupting the target day SHOULD NOT change its forecast
     fb = fa.copy()
     last_day = fb["date"].max()
-    fb.loc[fb["date"] == last_day, "dart"] = 1e6      # absurd values on day D
+    fb.loc[fb["date"] == last_day, "dart"] = 1e6      
     pk2 = _rolling_ts_predict("kalman", fb, n_tr, 2)
     same = np.isclose(pk[:-24], pk2[:-24], atol=1e-9).mean()
-    chk("corrupting the FINAL day leaves earlier forecasts untouched (no lookahead)",
+    chk("corrupting the FINAL day leaves earlier forecasts unchanged (no lookahead)",
         same > 0.999, f"({100*same:.2f}% identical)")
 
     # --- random forest
