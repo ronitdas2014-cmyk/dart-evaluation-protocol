@@ -2,22 +2,22 @@
 """Reformat raw CAISO OASIS data into the pipeline's PJM-style layout.
 
 
-Purpose
+Goal:
     baseline_forecasters.py expects, per node, hourly day-ahead and real-time
     files with total_lmp_* and congestion_price_* columns (PJM layout). This
     script converts the raw CAISO DAM (hourly) and RTPD/FMM (15-minute) files
     for the eight both-legs nodes into that layout. Real-time is averaged from
     the four FMM intervals to the hour.
 
-Inputs
+Inputs:
     --caiso_raw DIR/dam/*.csv , DIR/rtpd/*.csv  (columns: node, INTERVALSTARTTIME_GMT,
         total, congestion, energy, loss, ghg)
 
-Outputs
+Outputs:
     --out DIR/{da_hourly,rt_hourly}/pnode=<id>/all.csv  (datetime_beginning_utc,
         total_lmp_da/rt, congestion_price_da/rt) and a panel CSV (--panel_out).
 
-Usage
+Usage:
     python3 caiso_reformat.py --caiso_raw ./caiso_data --out ./caiso_reformatted \
         --panel_out ./caiso_panel.csv
 """
