@@ -1,27 +1,29 @@
 #!/usr/bin/env python3
 """Heavy-tail characterization of the congestion spread (Hill tail index).
 
+Goal:
     Independently recompute the upper- and lower-tail Hill index of the nodal
     congestion spread and compare with the published estimates. Confirms the
     finite-variance-boundary finding (alpha ~ 1.5).
 
-Inputs
+Inputs:
     --raw RAW_DIR/da_hourly/pnode=<id>/*.csv , RAW_DIR/rt_hourly/pnode=<id>/*.csv
         Raw PJM hourly LMP with `congestion_price_da` / `congestion_price_rt`.
     --data DATA_DIR/rq1_by_node.csv   (shipped estimates for comparison)
     --data DATA_DIR/panel_dedup_all.csv (18-node evaluation panel)
 
-Outputs (stdout)
+Outputs:
     Per node: recomputed plain Hill alpha vs. the published estimate and its CI.
 
-Usage
+Usage:
     python3 tail_exponents.py --data ./data --raw ./pjm_raw
 
-Note
+***Note:
     The manuscript's published alpha uses a drift-corrected Hill estimator
-    (column `hill_upper_drift`); the plain Hill recomputed here is expected to
-    fall within the shipped CI but not to be bit-identical.
+    (see column `hill_upper_drift`); the plain Hill recomputed here is expected to
+    fall within the published CI but not to be bit-identical.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -71,7 +73,7 @@ def main() -> None:
     ]
 
     print("Upper-tail Hill index of the congestion spread (k = shipped n_exceed_upper)")
-    print(f"    {'node':>12}  {'Hill (recomputed)':>18}  {'shipped alpha':>13}  {'shipped 95% CI':>16}")
+    print(f"    {'node':>12}  {'Hill (recomputed)':>18}  {'published alpha':>13}  {'published 95% CI':>16}")
     inside = total = 0
     for node in nodes:
         row = rq1[(rq1["pnode_id"] == int(node)) & (rq1["component"] == "congestion")]
@@ -84,7 +86,7 @@ def main() -> None:
         total += 1
         print(f"    {node:>12}  {alpha:>18.3f}  {row['hill_upper_a'].iloc[0]:>13.3f}"
               f"  [{lo:.2f}, {hi:.2f}]")
-    print(f"\n    {inside}/{total} nodes within the shipped CI; all alpha ~ 1.5 "
+    print(f"\n    {inside}/{total} nodes within the published CI; all alpha ~ 1.5 "
           "(heavy-tailed, near the finite-variance boundary).")
 
 
