@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Build Table caiso (external replication on CAISO both-legs congestion).
+"""Build Table CAISO (external replication on CAISO both-legs congestion).
 
-Purpose
+Goal:
     From the CAISO congestion predictions produced by baseline_forecasters.py
     (--component congestion, on the CAISO reformat), compute directional
     accuracy A, the winsorised-mass-weighted accuracy hbar_w, the excess over
@@ -9,7 +9,7 @@ Purpose
     node-balanced gross winsorised payoff, each with a five-day block-bootstrap
     95% interval.
 
-Definitions
+Preliminaries:
     A            = mean(hit),  hit = [ (p>0.5) == y ]
     hbar_w       = sum(min(|dart|,cap) * hit) / sum(min(|dart|,cap))
     Delta_nc     = A - A_nc,  A_nc = accuracy of the per-node majority sign;
@@ -17,12 +17,12 @@ Definitions
     payoff       = node-balanced mean of  direction * clip(dart, +/-cap)
     cap          = 99th percentile of |dart| on the Out-Of-Sample (OOS) panel
 
-Inputs
+Inputs:
     --pred PRED.csv : CAISO congestion predictions (dart, y, p_<model>, pnode_id,
         datetime_beginning_utc), i.e. baseline_forecasters.py --component congestion
         on the caiso_reformat output.
 
-Outputs
+Outputs:
     --out CSV : one row per forecaster (A, hbar_w, Delta_nc [CI], payoff [CI]).
 
 Usage
