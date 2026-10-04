@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Incremental payoff of each forecaster relative to the passive INC benchmark.
 
-Purpose
+Goal:
     For each forecasting method, compute the PAIRED per-period difference
         forecast payoff - passive-INC payoff
     on the full settlement spread, with a dependence-aware moving-block
@@ -9,7 +9,7 @@ Purpose
     positive increment with Holm control across the family, and save the raw
     bootstrap draws.
 
-Definitions
+Preliminaries:
     Passive INC = always-long: submit an increment offer every hour (direction
     +1), which settles the full DA-RT spread. Payoffs are gross and winsorized
     at the 99th percentile of |spread| (the fee sensitivity is handled separately 
@@ -17,14 +17,14 @@ Definitions
         Delta_{k,t} = (d_{k,t} - 1) * winsor(spread_t),
     which equals the method payoff minus the passive-INC payoff on the same
     observation; it also equals the "Delta vs always-long" column of the
-    Table 2, so the two must agree when computed from the same predictions.
+    Table 2.
 
-Inputs
+Inputs:
     --pred PRED.csv  full-spread predictions with columns:
         dt, dart_total, and one direction column per method named d_<method>
         with values in {-1, +1} (+1 = INC/long, -1 = DEC/short).
 
-Outputs
+Outputs:
     --out-prefix PREFIX (default increment_vs_inc_pjm):
         PREFIX_summary.csv  one row per method: mean diff, 95% CI, bootstrap SE,
                             one-sided p (increment > 0), Holm-adjusted p, and
@@ -32,7 +32,7 @@ Outputs
         PREFIX_draws.csv    the B bootstrap draws of the mean difference, one
                             column per method (raw output, not just the summary).
 
-Usage
+Usage:
     python3 incremental_payoff.py --pred pred_total_spread.csv \
         --out-prefix increment_vs_inc_pjm
 """
