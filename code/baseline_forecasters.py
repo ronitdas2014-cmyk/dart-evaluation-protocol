@@ -531,7 +531,21 @@ def run(data_dir, panel_csv, out_dir, component, train_end, min_lag_days,
 
 
 # ------------------------------------------------------------------ validation --------------------------------------------------------
+
+
 def _validate():
+
+    """
+    Implementation self-tests (POSITIVE CONTROLS) on SYNTHETIC data only.
+    These assertions are meant to verify the forecaster code is correct -- NO look-ahead, valid
+    probabilities, and recovery of directional sign structure on a constructed,
+    strongly persistent AR(1) process (rho=0.995) where such structure exists by
+    design. They are NOT empirical results and say nothing about forecaster skill on
+    real DA-RT spreads, which is reported in the paper's tables (e.g. Kalman accuracy
+    0.52 vs a 0.53 base rate). The real spread has ~zero autocorrelation at the 2-day
+    lag (the MA(1) construct below), which is why the same verified code shows no
+    skill on market data. Runs only under `--validate`.
+    """
     ok = True
 
     def chk(name, cond, extra=""):
@@ -751,7 +765,7 @@ def _validate():
         np.all(np.isfinite(ps)) and np.all((ps >= 0) & (ps <= 1)),
         f"(min {ps.min():.3f}, max {ps.max():.3f})")
     hit_s = float(((ps > 0.5).astype(int) == yte).mean())
-    chk("self-test: SARIMA recovers sign on a synthetic AR(1) when signal exists (hit > 0.60; synthetic data)", hit_k > 0.60,
+    chk("self-test: SARIMA recovers sign on a synthetic AR(1) when signal exists (hit > 0.60; synthetic data)", hit_s > 0.60,
         f"(hit rate {hit_s:.3f}; oracle {hit_o:.3f})")
     chk("SARIMA is very close to the oracle", hit_s > hit_o - 0.15,
         f"({hit_s:.3f} vs {hit_o:.3f})")
