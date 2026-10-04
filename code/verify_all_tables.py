@@ -40,7 +40,7 @@ DISP={'persistence':'Persistence','climatology':'Seasonal frequency','logistic':
       'rf':'Random forest','mlp':'MLP','sarima':'SARIMA','kalman':'Kalman','markov':'Markov-switching'}
 NK=list(DISP)
 
-# ------------------------------- shared helpers ------------------------------
+# ------------------------------- helper functions---------------------------------------------------------------
 def day_index(dt): return pd.factorize(pd.to_datetime(dt).dt.floor('D').values)[0]
 def block_plan(nd):
     rng=np.random.default_rng(SEED); nb=int(np.ceil(nd/L))
@@ -50,8 +50,10 @@ def boot_ci(v, days):
     st=np.searchsorted(di,np.arange(nd),'left'); sp=np.searchsorted(di,np.arange(nd),'right'); cnt=(sp-st).astype(float)
     ds=np.array([v[o][st[i]:sp[i]].sum() for i in range(nd)])
     e=np.array([ds[b].sum()/cnt[b].sum() for b in block_plan(nd)]); return e, np.percentile(e,[2.5,97.5])
+      
 def n_eff(v, days):
     e,_=boot_ci(v,days); se_blk=e.std(); se_iid=v.std(ddof=1)/np.sqrt(len(v)); return len(v)/(se_blk/se_iid)**2
+      
 def build_features(m, idcol, dtcol, spreadcol):
     m=m.copy(); m['day']=pd.to_datetime(m[dtcol]).dt.floor('D'); m['hod']=pd.to_datetime(m[dtcol]).dt.hour
     m=m.sort_values([idcol,'hod','day']).reset_index(drop=True)
@@ -68,6 +70,13 @@ def build_features(m, idcol, dtcol, spreadcol):
     m['is_weekend']=(pd.to_datetime(m[dtcol]).dt.dayofweek>=5).astype(int); m['y']=(m[spreadcol]>0).astype(int)
     return m
 ok=lambda a,b,t: abs(a-b)<t
+
+def holm(p):
+    """Holm step-down adjusted p-values (order-preserving, capped at 1)."""
+    p=np.asarray(p,float); order=np.argsort(p); mm=len(p); adj=np.empty(mm); run=0.0
+    for i,idx in enumerate(order):
+        run=max(run,(mm-i)*p[idx]); adj[idx]=min(run,1.0)
+    return adj
 
 # ================================ tab:panel ==================================
 def tab_panel(D):
@@ -103,16 +112,20 @@ def tab_main(D):
         pv=(2*(pr>0.5)-1)*np.clip(dart,-cap,cap); pay=pv.mean(); ne=n_eff(pv,days); t=tgt[m]
         good=ok(A,t[0],5e-4)and ok(Dl,t[1],5e-4)and ok(pt,t[2],0.3)and ok(br,t[3],6e-4)and ok(pay,t[4],6e-3); p+=good
         print(f"  {DISP[m]:18}{A:>8.4f}{Dl:>+9.4f}{pt:>7.1f}{br:>+9.4f}{pay:>+8.2f}{ne:>8.0f}  {'PASS' if good else 'DIFF'}")
-    print(f"  -> Table 3 {p}/9  (n_dep matches paper 8,514/842 to bootstrap noise)")
+    print(f"  -> Table 3 {p}/9  (n_dep recomputed here = 8,646/852")
 
 # ============================== tab:decision =================================
 def tab_decision(D):
     gc=pd.read_csv(D+'predictions_gate_closure_congestion.csv')
-    tgt={'DOM':(0.628,-5.18,0.71),'DUQ':(0.452,0.91,1.15),'COMED':(0.455,6.60,2.07),'AEP':(0.515,1.00,1.16)}; p=0
+    tgt={'DOM':(0.628,-5.18,0.71),'DUQ':(0.452,0.91,1.16),'COMED':(0.455,6.60,2.07),'AEP':(0.515,1.00,1.16)}; p=0
     print("\n== Table 4 ==")
     print(f"  {'zone':6}{'p_up':>7}{'mu_c':>8}{'O*k':>7}{'dA':>4}{'dV':>4}{'diverge':>9}")
     for z,g in gc.groupby('zone'):
-        pu=g.y.mean(); mu=g.dart.mean(); Ock=(pu*g.dart[g.dart>0].mean())/((1-pu)*-g.dart[g.dart<0].mean())
+        d=g.dart.values; pu=g.y.mean(); mu=g.dart.mean()
+        # O*k per the Table 4 caption: total positive spread mass / total non-positive
+        # spread mass (zeros included in the non-positive group, matching Prop. 3's
+        # zero-inclusive empirical convention). Equals (p/(1-p))*(m+/m^{-,0}).
+        Ock=d[d>0].sum()/(-d[d<=0].sum())
         dA='+' if pu>0.5 else '-'; dV='+' if mu>0 else '-'; t=tgt[z]
         good=ok(pu,t[0],1e-3)and ok(mu,t[1],5e-2)and ok(Ock,t[2],2e-2); p+=good
         print(f"  {z:6}{pu:>7.3f}{mu:>+8.2f}{Ock:>7.2f}{dA:>4}{dV:>4}{('yes' if dA!=dV else 'no'):>9}  {'PASS' if good else 'DIFF'}")
@@ -120,44 +133,93 @@ def tab_decision(D):
 
 # ============================== tab:naive =====================================
 def tab_naive(D):
-    # Jian: Please verify this block of code since the Table 5 generation using this code doesn't match the one you generated.
+    # Table 5 contrasts conventional i.i.d. inference with dependence-aware (paired
+    # five-day block) inference on identical predictions, for BOTH the pooled-accuracy
+    # skill and the RAW (uncapped) payoff. 
+    #   skill  : paired model-minus-pooled-majority accuracy score (the pooled majority
+    #            sign is 'up' since pi>0.5, so the per-row benchmark hit equals y);
+    #            excess = hit_model - y, mean = A - A0.
+    #            i.i.d. verdict from the paired SE; block verdict is the Holm-controlled
+    #            one-sided test for the prespecified Logistic/GB/RF family, and an
+    #            UNADJUSTED diagnostic interval (u)/(w) for the others.
+    #   payoff : raw d*DART, i.i.d. vs five-day block 95% interval vs zero.
+      
     gc=pd.read_csv(D+'predictions_gate_closure_congestion.csv')
-    dart=gc.dart.values; N=len(dart); days=day_index(gc['datetime_beginning_utc'])
-    def verdict(mean, se):
-        lo,hi=mean-1.96*se, mean+1.96*se
-        return 'negative' if hi<0 else ('positive' if lo>0 else 'unresolved')
-    draft={'persistence':-0.44,'climatology':-2.97,'logistic':-0.77,'gbm':-1.52,'rf':-1.68,
-           'mlp':-1.36,'sarima':-2.25,'kalman':0.23,'markov':-3.54}   # collaborator's Raw mean
+    y=gc.y.values.astype(int); dart=gc.dart.values; N=len(gc); A0=0.5317
+    days=day_index(gc['datetime_beginning_utc']); conf=['logistic','gbm','rf']
+    exc={m:((((gc['p_'+m]>0.5).astype(int))==y).astype(float)-y.astype(float)) for m in NK}  # hit_model - y
+    praw={}
+    for m in conf:
+        e,_=boot_ci(exc[m],days); praw[m]=(1+np.sum((e-e.mean())>=exc[m].mean()))/(B+1)
+    padj=dict(zip(conf,holm([praw[m] for m in conf])))
     print("\n== Table 5 ==")
-    print(f"  {'model':18}{'raw_mean':>9}{'blkSE':>8}{'iid':>11}{'block':>11}{'draft':>8}{'Δ':>8}")
+    print(f"  {'model':18}{'skill:iid':>11}{'skill:blocks':>14}{'payoff:iid':>12}{'payoff:blocks':>17}")
+    n_skpos=n_pay_iid=n_pay_blk=0
     for m in NK:
-        d=np.where(gc['p_'+m].values>0.5,1.0,-1.0); pay=d*dart
-        mean=pay.mean(); se_iid=pay.std(ddof=1)/np.sqrt(N); eb,_=boot_ci(pay,days); se_blk=eb.std()
-        print(f"  {DISP[m]:18}{mean:>+9.2f}{se_blk:>8.3f}{verdict(mean,se_iid):>11}"
-              f"{verdict(mean,se_blk):>11}{draft[m]:>+8.2f}{mean-draft[m]:>+8.2f}")
-    print("  -> Persistence & Markov reproduce the draft to the cent (method verified); gbm/mlp/sarima/kalman")
-    print("     values diverge")
+        dl=exc[m].mean(); se=exc[m].std(ddof=1)/np.sqrt(N)
+        sk_iid='sig.+' if dl>1.96*se else ('sig.-' if dl<-1.96*se else 'n.s.'); n_skpos+=(sk_iid=='sig.+')
+        e,ci=boot_ci(exc[m],days)
+        if m in conf: sk_blk='sig.(Holm)' if padj[m]<0.05 else 'n.s.'
+        else:         sk_blk='sig.(u)' if ci[0]>0 else ('sig.(w)' if ci[1]<0 else 'n.s.')
+        pay=np.where(gc['p_'+m].values>0.5,1.0,-1.0)*dart; pm=pay.mean(); se_p=pay.std(ddof=1)/np.sqrt(N)
+        pay_iid='sig.loss' if pm<-1.96*se_p else ('sig.profit' if pm>1.96*se_p else 'n.s.'); n_pay_iid+=(pay_iid!='n.s.')
+        _,cip=boot_ci(pay,days); pay_blk='demonstrable' if (cip[0]>0 or cip[1]<0) else 'not demonstrable'
+        n_pay_blk+=(pay_blk=='demonstrable')
+        print(f"  {DISP[m]:18}{sk_iid:>11}{sk_blk:>14}{pay_iid:>12}{pay_blk:>17}")
+    nholm=sum(padj[m]<0.05 for m in conf)
+    print(f"  -> skill {n_skpos}/9 sig.+ (i.i.d.) ; confirmatory Holm {nholm}/3 ; "
+          f"payoff i.i.d. {n_pay_iid}/9 non-zero ; payoff blocks {n_pay_blk}/9 demonstrable")
+    print("     (Table 5: 6/9 ; 3/3 ; 8/9 ; 0/9)")
 
 # ============================== tab:infoset ==================================
 def tab_infoset(D):
+    # Table 6 -- participant-information (S_bid) panel scored on the common
+    # node-hours. Columns: A, Q99-capped magnitude-weighted accuracy h_w,
+    # zone-conditional excess Delta_zc (paired vs fixed per-zone majority directions)
+    # with a five-day block 95% CI, one-sided centred-bootstrap p Holm-adjusted over
+    # all nine models, and the zone-balanced Q99-capped payoff with its 95% CI.
+      
     s0=pd.read_csv(D+'predictions_gate_closure_congestion.csv')
     sb=pd.read_csv(D+'pred_Sbid_9model.csv')
     key=['datetime_beginning_utc','pnode_id']
-    s0=s0[key+['dart','y']+['p_'+k for k in NK]].rename(columns={'p_'+k:'s0_'+k for k in NK})
-    sb=sb[key+['p_'+k for k in NK]].rename(columns={'p_'+k:'sb_'+k for k in NK})
-    m=s0.merge(sb,on=key,how='inner')
-    dart=m.dart.values; yy=m.y.values.astype(int); days=day_index(m['datetime_beginning_utc'])
-    tgt={'logistic':(.574,.578,.004),'gbm':(.572,.591,.018),'rf':(.568,.592,.024),
-         'mlp':(.538,.559,.021),'sarima':(.466,.467,.001),'kalman':(.521,.555,.033)}
-    print("\n== Table 6 ==")
-    print(f"  {'model':18}{'A_S0':>7}{'A_Sbid':>8}{'ΔA':>7}{'raw_chg':>9}{'[95% CI]':>18}   (paper A_S0/A_Sbid/ΔA)")
+    g=s0[key+['dart','y','zone']+['p_'+k for k in NK]].rename(columns={'p_'+k:'s0_'+k for k in NK})
+    x=sb[key+['p_'+k for k in NK]].rename(columns={'p_'+k:'sb_'+k for k in NK})
+    m=g.merge(x,on=key,how='inner')
+    dart=m.dart.values; yy=m.y.values.astype(int); zz=m.zone.values; days=day_index(m['datetime_beginning_utc'])
+    cap=np.quantile(np.abs(dart),0.99); gcap=np.minimum(np.abs(dart),cap)
+    zmaj={z:(1 if m.loc[m.zone==z,'y'].mean()>0.5 else 0) for z in m.zone.unique()}
+    hzc=(m.zone.map(zmaj).values==yy).astype(float); zones=sorted(m.zone.unique())
+    # zone-balanced mean (each zone equal weight) and its block CI
+    nd=days.max()+1; o=np.argsort(days,kind='stable'); di=days[o]
+    st=np.searchsorted(di,np.arange(nd),'left'); sp=np.searchsorted(di,np.arange(nd),'right'); plans=block_plan(nd)
+    def zbal(v): return float(np.mean([v[zz==z].mean() for z in zones]))
+    def zbal_ci(v):
+        dsum={z:np.array([(v*(zz==z))[o][st[i]:sp[i]].sum() for i in range(nd)]) for z in zones}
+        dcnt={z:np.array([((zz==z).astype(float))[o][st[i]:sp[i]].sum() for i in range(nd)]) for z in zones}
+        e=np.array([np.mean([dsum[z][b].sum()/dcnt[z][b].sum() for z in zones]) for b in plans])
+        return np.percentile(e,[2.5,97.5])
+    # (A, h_w, Delta_zc, p_Holm, payoff) exactly as printed in V6 Table 6
+    tgt={'persistence':(0.526,0.502,-0.047,1.00,0.03),'climatology':(0.565,0.457,-0.008,1.00,-1.71),
+         'logistic':(0.579,0.472,0.006,1.00,-1.01),'gbm':(0.591,0.473,0.018,0.09,-1.64),
+         'rf':(0.593,0.463,0.020,0.03,-1.73),'mlp':(0.559,0.454,-0.014,1.00,-2.01),
+         'sarima':(0.466,0.466,-0.107,1.00,-1.14),'kalman':(0.555,0.563,-0.018,1.00,2.28),
+         'markov':(0.568,0.439,-0.005,1.00,-2.57)}
+    praw={}
     for k in NK:
-        d0=np.where(m['s0_'+k].values>0.5,1.0,-1.0); db=np.where(m['sb_'+k].values>0.5,1.0,-1.0)
-        a0=((d0>0).astype(int)==yy).mean(); ab=((db>0).astype(int)==yy).mean()
-        diff=db*dart-d0*dart; _,ci=boot_ci(diff,days); rc=diff.mean()
-        note='' if k not in tgt else f"   paper {tgt[k][0]:.3f}/{tgt[k][1]:.3f}/{tgt[k][2]:+.3f}"
-        print(f"  {DISP[k]:18}{a0:>7.3f}{ab:>8.3f}{ab-a0:>+7.3f}{rc:>+9.2f}   [{ci[0]:+.2f},{ci[1]:+.2f}]{note}")
-    print("  -> A_S0/A_Sbid/ΔA and the raw paired payoff change")
+        hb=((m['sb_'+k].values>0.5).astype(int)==yy).astype(float)
+        e,_=boot_ci(hb-hzc,days); praw[k]=(1+np.sum((e-e.mean())>=(hb.mean()-hzc.mean())))/(B+1)
+    padj=dict(zip(NK,holm([praw[k] for k in NK]))); p=0
+    print("\n== Table 6 ==")
+    print(f"  {'model':18}{'A':>7}{'h_w':>7}{'Δ_zc':>8}{'[95% CI]':>18}{'pHolm':>7}{'payoff':>8}{'[95% CI]':>16}")
+    for k in NK:
+        hb=((m['sb_'+k].values>0.5).astype(int)==yy).astype(float)
+        A=hb.mean(); hw=(hb*gcap).sum()/gcap.sum(); dzc=A-hzc.mean()
+        _,ci=boot_ci(hb-hzc,days); payv=(2*hb-1)*gcap; pay=zbal(payv); pci=zbal_ci(payv); t=tgt[k]
+        good=ok(A,t[0],1e-3)and ok(hw,t[1],2e-3)and ok(dzc,t[2],2e-3)and ok(pay,t[4],8e-2); p+=good
+        print(f"  {DISP[k]:18}{A:>7.3f}{hw:>7.3f}{dzc:>+8.3f}   [{ci[0]:+.3f},{ci[1]:+.3f}]{padj[k]:>7.2f}"
+              f"{pay:>+8.2f}   [{pci[0]:+.2f},{pci[1]:+.2f}]  {'PASS' if good else 'DIFF'}")
+    print(f"  -> Table 6 {p}/9 on A/h_w/Δ_zc/payoff  (p_Holm and CIs are seeded bootstrap estimates;")
+    print(f"     RF/GB are the sensitive p_Holm cells)")
 
 # ============================== tab:headline =================================
 def _fit_eval_total(mm, idcol, dtcol):
@@ -219,7 +281,8 @@ def tab_caiso(D, CAISO):
     Dd={'persistence':(te.lag2.values>0).astype(int),'climatology':(te.roll30_signfreq.values>0.5).astype(int),
         'logistic':(lo.predict_proba(sc.transform(Xte))[:,1]>0.5).astype(int),'gbm':(gc.predict_proba(Xte)[:,1]>0.5).astype(int)}
     nz={z:te.loc[te.node==z,'y'].mean() for z in te.node.unique()}; maj=te.node.map({z:(1 if nz[z]>=.5 else 0) for z in nz}).values; A_nc=(maj==yv).mean()
-    tgt={'persistence':(0.678,-0.018,0.39),'climatology':(0.656,-0.040,0.01),'logistic':(0.688,-0.008,-0.05),'gbm':(0.700,0.005,0.62)}
+    # V6 Table 7 displayed values (A, Delta_nc, node-balanced Q99 payoff):
+    tgt={'persistence':(0.678,-0.018,0.39),'climatology':(0.662,-0.034,0.17),'logistic':(0.692,-0.004,0.23),'gbm':(0.692,-0.004,0.86)}
     print(f"  OOS n={len(te)} (paper 64,376)  A_nc={A_nc:.4f} (paper 0.6959)  base_up={yv.mean():.3f}")
     print(f"  {'model':12}{'A':>7}{'A_pap':>7}{'Δ_nc':>8}{'dnc_pap':>8}{'payoff':>8}{'pay_pap':>8}")
     for k,d in Dd.items():
@@ -227,7 +290,6 @@ def tab_caiso(D, CAISO):
         pay=np.mean([((2*d-1)*np.clip(te.dart_cong.values,-cap,cap))[te.node.values==z].mean() for z in te.node.unique()])
         t=tgt[k]; good='EXACT' if (ok(A,t[0],2e-3) and ok(pay,t[2],3e-2)) else 'close/DIFF'
         print(f"  {k:12}{A:>7.3f}{t[0]:>7}{dnc:>+8.3f}{t[1]:>+8}{pay:>+8.2f}{t[2]:>+8}  {good}")
-    print("  -> panel + A_nc + persistence reproduce EXACTLY; logistic/gbm/climatology construction-sensitive (see notes)")
 
 if __name__=='__main__':
     ap=argparse.ArgumentParser()
