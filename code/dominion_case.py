@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Dominion (DOM) running-case verification.
+"""Dominion (DOM) Case verification.
 
-Purpose
+Goal:
     Independently reproduce every number used in the Dominion running example
     (Introduction, Model Setup, Results), all on the congestion spread:
         - share of the panel's total absolute-spread economic mass
@@ -11,11 +11,11 @@ Purpose
         - the frequency-odds (O), magnitude ratio (kappa), and asymmetry O*kappa
         - the accuracy-optimal vs payoff-optimal direction and whether they diverge
 
-Inputs
+Inputs:
     --data DATA_DIR/predictions_gate_closure_congestion.csv
-        Out-of-sample node-hours with realised spread `dart` and `zone`.
+        Out-of-sample node-hours with realized spread `dart` and `zone`.
 
-Outputs
+Outputs:
     stdout summary and --out CSV (default dominion_case.csv), one row per
     quantity, with value, 95% CI where applicable, and a source note.
 
@@ -37,7 +37,6 @@ BLOCK_DAYS = 5
 
 def block_bootstrap_mean_ci(values: np.ndarray, day_id: np.ndarray) -> tuple[float, float]:
     """Return the 95% moving-block bootstrap CI for the mean of `values`.
-
     Days are the dependence unit; whole days are resampled in 5-day blocks.
     """
     n_days = day_id.max() + 1
