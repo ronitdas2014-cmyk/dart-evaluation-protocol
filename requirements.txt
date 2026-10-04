@@ -1,5 +1,9 @@
-numpy==2.4.4
-pandas==3.0.2
-scipy==1.17.1
+# Pinned to the environment reported as tested in the manuscript's
+# "Data and reproducibility" section. Python 3.13.5.
+# scikit-learn is the version-sensitive dependency (gradient-boosted rows can
+# shift ~$0.2/MWh across releases).
+numpy==2.3.5
+pandas==2.2.3
+scipy==1.17.0
 scikit-learn==1.8.0
-statsmodels==0.15.0
+statsmodels==0.14.6
