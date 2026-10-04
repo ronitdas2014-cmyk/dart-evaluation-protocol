@@ -1,29 +1,22 @@
 #!/usr/bin/env python3
 """Data-snooping-robust test that no forecaster has positive economic value.
 
-Purpose
+Goal:
     Apply White's (2000) Reality Check and Hansen's (2005) Superior
     Predictive Ability (SPA) test to the nine directional forecasters, with a
     benchmark of zero economic value. Reproduces the in-text Reality Check
     p-value of 0.59 for the nine-forecaster family.
 
-Inputs
+Inputs:
     --data DATA_DIR/predictions_gate_closure_congestion.csv
         78,264 out-of-sample node-hours: forecaster probabilities `p_<model>`,
-        realised spread `dart`, sign outcome `y`, and `zone`.
+        realized spread `dart`, sign outcome `y`, and `zone`.
 
-Outputs (stdout)
+Outputs:
     Best strategy value ($/MWh) and Reality Check / SPA p-values.
 
-Usage
+Usage:
     python3 reality_check_spa.py --data ./data
-
-Note
-    The manuscript also reports a 73-strategy extended family (nine forecasters
-    x four confidence thresholds x two winsorisation caps, plus always-long).
-    That extension requires the paper's exact confidence-ranking and tie
-    handling for the hard 0/1 forecasters (persistence), which is not
-    reconstructed here; only the nine-forecaster family is recomputed.
 """
 from __future__ import annotations
 
@@ -58,8 +51,7 @@ def _block_indices(day_id: np.ndarray) -> list[np.ndarray]:
 
 def strategy_values(gc: pd.DataFrame) -> np.ndarray:
     """Per-period value ($/MWh) of each forecaster; benchmark = 0.
-
-    Direction is sign(p - 0.5); the payoff is the realised spread winsorised at
+    Direction is sign(p - 0.5); the payoff is the realized spread winsorized at
     the 99th percentile of |DART|. Column k holds strategy k's per-period value.
     """
     dart = gc["dart"].to_numpy()
