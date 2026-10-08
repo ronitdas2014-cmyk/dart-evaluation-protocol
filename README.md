@@ -1,6 +1,6 @@
 # DA - RT Price Spread Evaluation Protocol
 
-This manual gives you the steps to replicate all the 7 tables in the paper.
+This manual gives you the steps to replicate all 7 tables in the paper.
 
 Everything is deterministic: fixed seed `20260725`, 5-day moving-block bootstrap,
 B = 2000. 
@@ -14,40 +14,40 @@ export PYTHONPATH=code                       # Windows PowerShell: $env:PYTHONPA
 python code/verify_all_tables.py --data data # reproduces Tables 1, 3-6
 ```
 That alone reproduces 5 of the 7 tables from the prediction files already committed
-to the repo. Steps 5–6 add the two tables that need the Zenodo raw prices of both the PJM and CAISO LMP price spread prices data.
+to the repo. Steps 5–6 add the two tables that need the Zenodo raw prices of both the PJM and CAISO LMP price spread data.
 
 ---
 
 ## 1. Prerequisites
 - **Python 3.10+** and **git**. Check: `python --version` and `git --version`.
-- ~2 GB free disk for the raw price data once downloaded and unzipped.
+- ~2 GB free disk space for the raw price data once downloaded and unzipped.
 - macOS/Linux: a normal shell. Windows: use **WSL** or **Git Bash** to run
   `run_all.sh`; or run the explicit `python ...` commands in Step 6, which work in
-  any shell including PowerShell.
+  any shell, including PowerShell.
 
-## 2. Get the code
+## 2. Code Access
 ```bash
 git clone https://github.com/ronitdas2014-cmyk/dart-evaluation-protocol.git
 cd dart-evaluation-protocol
 ```
 
-## 3. Set up a clean environment
+## 3. Environment Setup
 ```bash
 python -m venv .venv
 source .venv/bin/activate      # Windows PowerShell: .venv\Scripts\Activate.ps1
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
-`requirements.txt` fixes numpy, pandas, scipy, scikit-learn, and statsmodels. The fixing-step matters: the gradient-boosted rows shift by ~$0.2/MWh across scikit-learn versions.
+`requirements.txt` fixes numpy, pandas, scipy, scikit-learn, and statsmodels. The fixing step matters: the gradient-boosted rows shift by ~$0.2/MWh across scikit-learn versions.
 
-## 4. Verify the 5 tables
+## 4. Verification of Values Present in 5 out of the 7 Total Tables in the Paper
 
-The repo already ships the forecaster prediction files these tables are built from, so data downloading of prices is needed from Zenodo.
+The repository already gives the forecaster prediction files these tables are built from, so price data needs to be downloaded from Zenodo.
 ```bash
 export PYTHONPATH=code          # Windows PowerShell: $env:PYTHONPATH="code"
 python code/verify_all_tables.py --data data
 ```
-It prints a PASS/verdict line for **Table 1, Table 3, Table 4, Table 5,
+It prints a VERDICT [PASS] line for **Table 1, Table 3, Table 4, Table 5,
 Table 6**, comparing the recomputed value to the values published in the paper for every cell.
 
 Two more that also need no raw data:
@@ -74,7 +74,7 @@ unzip pjm_raw.zip
 unzip caiso_data.zip
 ```
 
-Unzip them **into the repo root** so you end up with exactly this layout (the folder
+Unzip them **into the repository root** so you end up with exactly this layout (the folder
 names `pjm_raw` and `caiso_data` are what the commands below expect — rename if your
 archives unzip to something else):
 
@@ -95,7 +95,7 @@ ls caiso_data/dam    | head      # should list  dated .csv files
 If `ls pjm_raw/da_hourly` does not show `pnode=...` folders, the data is not where
 the pipeline looks — fix the folder nesting until it does.
 
-## 6. Reproduce the two full-spread tables (Tables 2 and 7)
+## 6. Reproduce the Complete Price-Spread Tables (Tables 2 and 7) from the Paper
 Option A — one command (macOS/Linux/WSL/Git Bash):
 ```bash
 bash run_all.sh pjm_raw caiso_data
@@ -125,9 +125,9 @@ python code/tail_exponents.py      --data data --raw pjm_raw
 python code/stationarity_tests_verify.py --data data --raw pjm_raw
 ```
 Expected time needed to complete the tests: the two `baseline_forecasters.py` runs each fit SARIMA / Kalman
-/ Markov and take a few minutes; the whole of Step 6 is roughly 10–30 minutes on a desktop.
+/ Markov and take a few minutes; the whole of Step 6 is roughly 10–30 minutes on a regular desktop machine.
 
-## 7. Which script produces which paper object
+## 7. Code Snippet ----> Paper Results Mapping
 | Paper object | Command | Needs raw data? |
 |---|---|---|
 | Table 1, Table 3, Table 4, Table 5, Table 6 | `verify_all_tables.py --data data` | No (uses committed predictions) |
@@ -140,7 +140,7 @@ Expected time needed to complete the tests: the two `baseline_forecasters.py` ru
 | Stationarity (ADF/KPSS) | `stationarity_tests_verify.py --data data --raw pjm_raw` | Yes (PJM raw) |
 | In-text: tail concentration, pooled→zone collapse, ECE, PT, block-SE, n_eff | `verify_intext_numbers.py --data data [--pjm_raw pjm_raw]` | Partly |
 
-## 8. What does "Reproducibility" stand for in this case?
+## 8. Defining "Reproducibility" for Our Case.
   **Deterministic columns reproduce exactly**: accuracy, PT, Brier, payoff points,
   panel composition, verdicts, and the always-long premium (+$2.58 PJM, +$2.75 CAISO).
 - **Gradient-boosted rows** (Histogram-based Gradient Boosted Classifier, and the signed-spread regressor) can differ by
